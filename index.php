@@ -17,6 +17,18 @@ F3::route('GET /@store/meta', function(){
 
 F3::route('POST /@store/meta/changesets', 'process_changeset_request');
 
+F3::route('POST /@store/graphs', function(){
+ update_graph('insert'); 
+});
+F3::route('PUT /@store/graphs', function(){
+ update_graph('replace'); 
+});
+F3::route('DELETE /@store/graphs', function(){
+ update_graph('delete'); 
+});
+
+
+
 F3::run();
 
 ?>

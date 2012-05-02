@@ -4,8 +4,16 @@
 include_once('arc/ARC2.php');
 define('rdf_ns',  'http://www.w3.org/1999/02/22-rdf-syntax-ns#');
 define('cs_ns', 'http://purl.org/vocab/changeset/schema#');
+define('BAD_REQUEST', "HTTP/1.1 400 Bad Request");
+define('200_OK', 'HTTP/1.1 200 OK');
+
+function checkStoreName($storename){
+  @include 'settings.php';
+
+}
 
 function getStore($storename, $writable=false){
+
   /* configuration */ 
   $endpoint_features = array('select', 'construct', 'ask', 'describe');
   if($writable){
@@ -78,5 +86,40 @@ function process_changeset_request(){
 }
 
 
+function update_graph($action){
+  getStore(F3::get('PARAMS["store"]'));
+
+  if(isset($_REQUEST['graph'])){
+    $graphName = $_REQUEST['graph'];
+    $rdf = file_get_contents('php://input');
+    switch($action){
+      case 'insert':
+       $result = $store->insert($rdf, $graphName);
+        break;
+      case 'replace' :
+        $result = array( 
+          'deletingGraph' => $store->query('DELETE FROM <'.$graphName.'>'),
+          'insertingGraph' => $store->insert($rdf, $graphName)
+       );
+        break;
+      case 'delete' :
+        $result = $store->delete($rdf, $graphName);
+        break;
+    }
+    if(empty($store->getErrors())){
+      header(200_OK);
+      echo json_encode($result);
+    } else {
+      header(BAD_REQUEST);
+      echo json_encode($store->getErrors());
+   }
+  } else {
+    header(BAD_REQUEST);
+    echo "Please provide a ?graph parameter";
+    exit;
+  }
+
+
+}
 
 ?>

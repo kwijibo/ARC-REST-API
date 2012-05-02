@@ -10,4 +10,13 @@ define('DB_NAME', 'arcstore');
 define('DB_USER', 'root');
 define('DB_PWD', '');
 
+
+$acl = array(
+  'mystore' => array(
+    'username' => '',
+    'password' => '',
+  )
+
+);
+
 ?>
