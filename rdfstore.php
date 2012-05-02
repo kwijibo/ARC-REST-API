@@ -5,7 +5,8 @@ include_once('arc/ARC2.php');
 define('rdf_ns',  'http://www.w3.org/1999/02/22-rdf-syntax-ns#');
 define('cs_ns', 'http://purl.org/vocab/changeset/schema#');
 define('BAD_REQUEST', "HTTP/1.1 400 Bad Request");
-define('200_OK', 'HTTP/1.1 200 OK');
+define('STATUS_OK', 'HTTP/1.1 200 OK');
+define('INTERNAL_ERROR', "HTTP/1.1 500 Internal Server Error");
 
 function checkStoreName($storename){
   @include 'settings.php';
@@ -28,7 +29,7 @@ function getStore($storename, $writable=false){
       /* store name (= table prefix) */
       'store_name' => $storename,
     /* endpoint */
-    'endpoint_features' =>  $endpoint_features ),
+    'endpoint_features' =>  $endpoint_features ,
     'endpoint_timeout' => 60, /* not implemented in ARC2 preview */
     'endpoint_read_key' => '', /* optional */
 //    'endpoint_write_key' => 'somekey', /* optional */
@@ -43,7 +44,7 @@ function getStore($storename, $writable=false){
 
 function dereifyStatementToNtriples($statement_properties){
   $rdf_index = array();
-  $subject = $statement_properties[rdf_ns.'subject'][0];['value']
+  $subject = $statement_properties[rdf_ns.'subject'][0]['value'];
   $predicate = $statement_properties[rdf_ns.'predicate'][0]['value'];
   $object = $statement_properties[rdf_ns.'object'][0];
   $rdf_index[$subject][$predicate] = array($object);
@@ -52,7 +53,13 @@ function dereifyStatementToNtriples($statement_properties){
 }
 
 function process_changeset_request(){
-  $store = getStore(F3::get('PARAMS["store"]'),'writable');
+  $storename = F3::get('PARAMS["store"]');
+  $store = getStore($storename,'writable');
+  if (!$store->isSetUp()) {
+    $store->setUp();
+    add_store_to_list($storename);
+  }
+  
   $rdf_index = $store->toIndex(file_get_contents('php://input'),1);
 
   $triplesToInsert = '';
@@ -73,24 +80,37 @@ function process_changeset_request(){
     }
   }
 
-  $store->replace($triplesToDelete, 'urn:defaultGraph', $triplesToInsert);
-  
-  if(empty($store->getErrors())){
-    header("HTTP/1.1 204 No Content");
+  $result = $store->replace($triplesToDelete, 'urn:defaultGraph', $triplesToInsert);
+  $errors = $store->getErrors();
+  if(empty($errors)){
+    header(STATUS_OK);
     exit;
   } else {
-    header("HTTP/1.1 500 Internal Server Error");
-    echo implode("\n", $store->getErrors());
+    header(INTERNAL_ERROR);
+    echo json_encode($store->getErrors());
     exit;
   }
 }
 
+function add_store_to_list($storename){
+  $stores = json_decode(file_get_contents('stores-list.json'));
+  $stores[$storename]=getStoreUri();
+  file_put_contents('stores-list.json',json_encode($stores));
+}
 
 function update_graph($action){
-  getStore(F3::get('PARAMS["store"]'));
+  $storename = F3::get('PARAMS["store"]');
+  $store = getStore($storename);
+  if (!$store->isSetUp()) {
+    $store->setUp();
+    add_store_to_list($storename);
+  }
 
   if(isset($_REQUEST['graph'])){
     $graphName = $_REQUEST['graph'];
+  } else {
+    $graphName = 'urn:default';
+  }
     $rdf = file_get_contents('php://input');
     switch($action){
       case 'insert':
@@ -106,20 +126,24 @@ function update_graph($action){
         $result = $store->delete($rdf, $graphName);
         break;
     }
-    if(empty($store->getErrors())){
-      header(200_OK);
+    
+    $errors = $store->getErrors();
+    
+    if(empty($errors)){
+      header(STATUS_OK);
       echo json_encode($result);
     } else {
       header(BAD_REQUEST);
-      echo json_encode($store->getErrors());
-   }
-  } else {
-    header(BAD_REQUEST);
-    echo "Please provide a ?graph parameter";
-    exit;
-  }
+      echo json_encode(array($result, $store->getErrors()));
+    }
 
 
 }
+
+function serveSparql() {
+  /* initiates ARC's built in sparql endpoint */
+  getStore(F3::get('PARAMS["store"]'))->go(); 
+}
+
 
 ?>
