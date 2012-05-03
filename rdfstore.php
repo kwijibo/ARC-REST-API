@@ -14,6 +14,14 @@ function checkStoreName($storename){
 
 }
 
+function getGraphName(){
+  if(isset($_REQUEST['graph'])){
+    $graphName = $_REQUEST['graph'];
+  } else {
+    $graphName = 'urn:default';
+  }
+}
+
 function getStore($storename, $writable=false){
 
   StoreList::add_store($storename);
@@ -83,10 +91,12 @@ function process_changeset_request(){
     }
   }
 
-  $result = $store->replace($triplesToDelete, 'urn:defaultGraph', $triplesToInsert);
+  $graphName = getGraphName();
+  $result = $store->replace($triplesToDelete, $graphName, $triplesToInsert);
   $errors = $store->getErrors();
   if(empty($errors)){
     header(STATUS_OK);
+    echo json_encode($result);
     exit;
   } else {
     header(INTERNAL_ERROR);
@@ -103,11 +113,7 @@ function update_graph($action){
     $store->setUp();
   }
 
-  if(isset($_REQUEST['graph'])){
-    $graphName = $_REQUEST['graph'];
-  } else {
-    $graphName = 'urn:default';
-  }
+  $graphName = getGraphName();
     $rdf = file_get_contents('php://input');
     switch($action){
       case 'insert':
