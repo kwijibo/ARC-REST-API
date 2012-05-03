@@ -1,6 +1,6 @@
 [submodule "fatfree"]
 	path = fatfree
-	url = https://kwijibo@github.com/kwijibo/fatfree.git
+	url = git://github.com/bcosca/fatfree.git
 [submodule "arc"]
 	path = arc
 	url = https://github.com/semsol/arc2.git

@@ -55,7 +55,11 @@ F3::route('GET /@store/meta', function(){
 F3::route('POST /@store/meta/changesets', 'process_changeset_request');
 
 F3::route('POST /@store/meta', function(){
- update_graph('insert'); 
+  if(isset($_SERVER['CONTENT_TYPE']) AND strstr($_SERVER['CONTENT_TYPE'], 'application/vnd.talis.changeset')){
+    process_changeset_request();
+  } else {
+    update_graph('insert'); 
+  }
 });
 F3::route('PUT /@store/meta', function(){
  update_graph('replace'); 
