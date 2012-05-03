@@ -9,7 +9,7 @@ class StoreList {
       $stores[$storename]=getStoreUri();
       file_put_contents(self::$file,json_encode($stores));
   }
-  function remove_store($storename){
+  static function remove_store($storename){
       $stores = json_decode(file_get_contents(self::$file), 1);
       unset($stores[$storename]);
       file_put_contents(self::$file,json_encode($stores));
