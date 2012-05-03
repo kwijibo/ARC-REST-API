@@ -6,6 +6,7 @@ define('rdf_ns',  'http://www.w3.org/1999/02/22-rdf-syntax-ns#');
 define('cs_ns', 'http://purl.org/vocab/changeset/schema#');
 define('BAD_REQUEST', "HTTP/1.1 400 Bad Request");
 define('STATUS_OK', 'HTTP/1.1 200 OK');
+define('OK_NO_CONTENT', 'HTTP/1.1 204 No Content');
 define('INTERNAL_ERROR', "HTTP/1.1 500 Internal Server Error");
 
 function checkStoreName($storename){
@@ -14,6 +15,8 @@ function checkStoreName($storename){
 }
 
 function getStore($storename, $writable=false){
+
+  StoreList::add_store($storename);
 
   /* configuration */ 
   $endpoint_features = array('select', 'construct', 'ask', 'describe');
@@ -57,7 +60,7 @@ function process_changeset_request(){
   $store = getStore($storename,'writable');
   if (!$store->isSetUp()) {
     $store->setUp();
-    add_store_to_list($storename);
+    StoreList::add_store($storename);
   }
   
   $rdf_index = $store->toIndex(file_get_contents('php://input'),1);
@@ -92,18 +95,12 @@ function process_changeset_request(){
   }
 }
 
-function add_store_to_list($storename){
-  $stores = json_decode(file_get_contents('stores-list.json'));
-  $stores[$storename]=getStoreUri();
-  file_put_contents('stores-list.json',json_encode($stores));
-}
 
 function update_graph($action){
   $storename = F3::get('PARAMS["store"]');
   $store = getStore($storename);
   if (!$store->isSetUp()) {
     $store->setUp();
-    add_store_to_list($storename);
   }
 
   if(isset($_REQUEST['graph'])){

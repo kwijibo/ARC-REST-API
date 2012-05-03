@@ -1,12 +1,18 @@
 <?php
 require 'fatfree/lib/base.php';
+require 'storelist.php';
 require 'rdfstore.php';
 require 'settings.php';
 
 function getStoreUri(){
-  $storename = F3::get('PARAMS["store"]');
+  $storename = getStoreName();
   return "http://{$_SERVER['SERVER_NAME']}/stores/{$storename}";  
 }
+
+function getStoreName(){
+  return $storename = F3::get('PARAMS["store"]');
+}
+
 
 F3::route('GET /', function(){
   if(!$json = file_get_contents('stores-list.json')){
@@ -25,6 +31,11 @@ F3::route('GET /@store', function(){
     ));
 });
 
+F3::route('DELETE /@store', function(){
+  $storename = getStoreName();
+  getStore($storename)->drop();
+  header(OK_NO_CONTENT);
+});
 F3::route('GET /@store/services/sparql','serveSparql');
 F3::route('POST /@store/services/sparql','serveSparql');
 
@@ -37,7 +48,8 @@ F3::route('GET /@store/meta', function(){
     $_SERVER['QUERY_STRING'] = '?query='.urlencode($query);
     $_GET['query'] = $query;
     $_POST['query'] = $query;
-    getStore(F3::get('PARAMS["store"]'))->go(); 
+    $storename = getStoreName();
+    getStore($storename)->go(); 
 });
 
 F3::route('POST /@store/meta/changesets', 'process_changeset_request');
@@ -53,9 +65,5 @@ F3::route('DELETE /@store/meta', function(){
 });
 
 
-
-
-
 F3::run();
-
 ?>
