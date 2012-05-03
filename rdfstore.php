@@ -145,6 +145,7 @@ function update_graph($action){
 
 function serveSparql() {
   /* initiates ARC's built in sparql endpoint */
+  header("Access-Control-Allow-Origin: *");
   getStore(F3::get('PARAMS["store"]'))->go(); 
 }
 

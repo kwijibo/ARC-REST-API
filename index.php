@@ -40,6 +40,7 @@ F3::route('GET /@store/services/sparql','serveSparql');
 F3::route('POST /@store/services/sparql','serveSparql');
 
 F3::route('GET /@store/meta', function(){
+  header("Access-Control-Allow-Origin: *");
   if(isset($_GET['about'])){
     $query = "DESCRIBE <{$_GET['about']}>";
   } else {
